@@ -11,103 +11,135 @@ using namespace std;
 double getBigramProb(const char *w1)
 {
     // cout<<w1;
-    printf("%s",w1);
+    printf("%s\n\n",w1);
+}
+vector<char*> Get_map_set(char* ZhuYin)
+{
+    /* read ecah row */
+    ifstream map_file;
+    map_file.open("ZhuYin-Big5.map");
+    string s;
+    vector<char *> map_set;
+    int i;
+    while(getline(map_file , s)) // not read to end
+    {
+        
+        /* string change to *char */
+        char *row = strdup(s.c_str());
+        /* string partition */
+        const char *d = " \t\n";
+        char * p;
+        int hit = 0;
+
+        p = strtok(row , d);
+        while (p)
+        {
+            if(strcmp(p , ZhuYin) == 0 || hit == 1 )
+            {
+                map_set.push_back(p);
+                hit = 1;
+            }
+            else if(hit == 0)
+                break;
+            p = strtok(NULL, d);
+        }   
+        if(hit == 1)   // have found mapping row
+            break;
+        int i = 0;
+    }
+    // cout<<"size = "<<map_set.size()<<endl;
+    // for(i = 0 ; i < map_set.size();i++)
+    // {
+    //     cout<<map_set[i];
+    // }
+
+    map_file.close();
+    map_set.erase(map_set.begin());
+    return map_set;
 }
 
 
 int main(int argc , char **argv)
 {
-    // input **argv processing
-    char *text_file , *mapping , *language_model , *o , *output;
-    text_file = argv[1];
-    mapping = argv[2];
-    language_model = argv[3];
-    o = argv[4];
-    output = argv[5];
-    int order;
-    if(strcmp(o,"2") == 0)
-        order = 2;
-    else if(strcmp(o , "3") == 0)
-        order = 3;
-    
-    else
+    /* read text file */
+    ifstream text_file;
+    text_file.open("seg_1.txt");
+    string temp;
+    vector<char *> text_set;
+    int i;
+    while(getline(text_file , temp)) // not read to end
     {
-        cout<<"input order is out of range 2 to 3";
-        return 0;
-    }
-    
-    cout<<text_file<<" "<<mapping<<" "<<language_model<<" "<<order<<" "<<output<<" "<<endl;
-
-    //  read mapping file
-    // ifstream map_file;
-    // string line;
-    // map_file.open(mapping);
-    // while(getline(map_file , line))
-    // {
-    //     cout<<line<<endl;
-    //     cout<<"head = "<<line[0]<<line[1]<<endl;
-    //     cout<<"len = " <<line.length()<<endl;
-    // }
-    // map_file.close();
-
-    // method 2 for char *
-
-    char line[SIZE];
-    FILE *fp = fopen("ZhuYin-Big5.map" , "r");
-    char *temp;
-    vector<char*> path;
-    while(fgets(line , SIZE , fp)!=NULL)
-    {
-        // ¦r¦ê¤Á³Î
+        text_set.clear();
+        /* string change to *char */
+        char *text_row = strdup(temp.c_str());
+        /* string partition */
         const char *d = " \t\n";
-        char *p , Zhu[] ="£x";
-        p = strtok(line , d);
-        temp = p;
-        if(strcmp(p , Zhu) == 0)
+        char * p;
+        p = strtok(text_row , d);
+        while (p)
         {
-            cout<<"find £x"<<endl;
-            while(p)
-            {
-                getBigramProb(p);
-                // cout<<p;
-                p = strtok(NULL , d);
-                path.push_back(p);
-            }
-            cout<<endl;
-        }
+            printf("%s",p);
+            text_set.push_back(p);
+            p = strtok(NULL, d);
+        }   
+        text_set.push_back(text_set[0]);
+        cout<<"\ntext size = "<<text_set.size()<<endl<<endl;
+
+        /* create ZhuYin mapping set */
+        // vector<char*> map_test; 
+        // for(i = 0; i <text_set.size() ; i++)
+        // {
+        //     int j;
+        //     map_test = Get_map_set(text_set[i]);
+        //     cout<<"\nZhuYin = "<<text_set[i]<<"  size = "<<map_test.size()<<endl;
+        //     for(j=0 ; j < map_test.size() ; j++)
+        //     {
+        //         cout<<map_test[j];
+        //     }
+        //     cout<<endl;
+        // }
     }
-    cout<<"temp = "<<temp;
-    cout<<endl<<endl;
-    int i = 0;
-    for(i = 0;i<path.size();i++)
+    // for(i=0;i<text_set.size() - 1;i++)
+    // {
+    //     vector<char*> m1,m2;
+    //     cout<<text_set[i]<<endl;
+    //     m1 = Get_map_set(text_set[i]);
+    //     m2 = Get_map_set(text_set[i+1]);
+    // }
+
+    // vector<char*> m1 , m2;
+    // m1 = Get_map_set(text_set[0]);
+    // m2 = Get_map_set(text_set[1]);
+    // cout<<"ZhuYin 1 = "<<text_set[0]<<"  size = "<<m1.size()<<endl;
+    // for(i=0;i<m1.size();i++)
+    // {
+    //     cout<<m1[i];
+    // }
+    // cout<<"\n\nZhuYin 2 = "<<text_set[1]<<"  size = "<<m2.size()<<endl;
+    // for(i=0;i<m2.size();i++)
+    // {
+    //     cout<<m2[i];
+    // }
+
+
+
+    cout<<"\n\nend"<<endl;
+    cout<<endl;
+
+    /* send ZhuYin to "Get_map_set" to get Big-5 mapping set */
+
+    /* assign ZhuYin method
+    string s= "££";
+    char *ZhuYin = strdup(s.c_str());
+    vector<char*> map_set = Get_map_set(ZhuYin);
+    vector<char*> map_set = Get_map_set(text_set[0]);
+    cout<<"\nreturn map size = "<<map_set.size()<<endl;
+    for(i=0;i<map_set.size();i++)
     {
-        cout<<path[i];
+        cout<<map_set[i];
     }
-    fclose(fp);
+    */
 
-
-
-
-
-
-
-
-    // read text file
-    ifstream inFile;
-    inFile.open("test.txt");
-    char c1[3] = {0};
-    char c2[3] = {0};
-    inFile>>c1[0]>>c1[1];
-    while(inFile>>c2[0]>>c2[1])
-    {
-        // cout<<"1 = "<<c1<<","<<c2<<endl;
-        // inFile>>c2[0]>>c2[1];
-        c1[0] = c2[0];
-        c1[1] = c2[1];
-        c1[2] = 0;
-    }
-    char *s = c2;
-    // cout<<s<<endl;
-    inFile.close();
+    text_file.close();
     return 0;
 }
