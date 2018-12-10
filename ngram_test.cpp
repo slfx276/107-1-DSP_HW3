@@ -103,6 +103,7 @@ int main(int argc, char *argv[])
     string temp;
     vector<char *> text_set;
     int i;
+    /* each round is one row of text */
     while(getline(text_fp , temp)) // not read to end
     {
         text_set.clear();
@@ -120,31 +121,92 @@ int main(int argc, char *argv[])
         }   
         cout<<"\ntext size = "<<text_set.size()<<endl<<endl;
 
-
-
-        // 考慮做一個二維vector 放整行?
-        /* start Viterbi */
-        int Time = text_set.size();
-
-
         /* create ZhuYin mapping set */
+    
+        int Time = text_set.size();
+        int i , j , t;
+        vector<char*> q[Time];
+        vector<int> track_index[Time];
+        vector<float> Delta[Time];
+        vector<char*> map_before , map_after; 
+        vector<char*> map_test;
+        string s1 = "<s>" , s2 = "</s>";
+        char *start = strdup(s1.c_str()) , *end = strdup(s2.c_str());
         
-        //print corresponding big-5 mapping set 
-        vector<char*> map_test; 
-        for(i = 0; i <text_set.size() ; i++)
+        /* Viterbi parameter from beginning to the end. */
+        for(t = 0 ; t < Time-1 ; t++)
         {
-            int j;
-            map_test = Get_map_set(text_set[i] , mapping);
-            cout<<"\nZhuYin = "<<text_set[i]<<"  size = "<<map_test.size()<<endl;
-            for(j=0 ; j < map_test.size() ; j++)
+            map_before.clear();
+            map_after.clear();
+            map_before = Get_map_set(text_set[t] , mapping);
+            map_after = Get_map_set(text_set[t+1] , mapping);
+            /* initialize Delta[0] */
+            if(t==0)
             {
-                cout<<map_test[j];
+                // Delta[0] have map_before.size() elements.
+                for(j = 0 ; j < map_before.size() ; j++)
+                {
+                    Delta[0].push_back(getBigramProb( start , map_before[j] , voc , lm));
+                }
+                // for(j = 0 ; j < Delta[0].size() ; j++)
+                // {
+                //     cout<<"Dealta "<<map_before[j]<<" = "<<Delta[0][j]<<endl;
+                // }
             }
-            
+            cout<<"finish Delta[0] initialization. time = 1/"<<t<<endl;
+            int m1 , m2;
+            /* create other Time-1 Delta */
+            cout<<"map_after.size = "<<map_after.size()<<endl;
+            for(m2 = 0 ; m2 < map_after.size() ; m2++)
+            {  
+                float max_prob = -10000;
+                char* max_preword;
+                int preword_index;
+                /* update Delta[t][m2] */
+                for(m1 = 0 ; m1 < map_before.size() ; m1++)
+                {
+                    printf("(%d.%d), ",m1,m2);
+                    float transition = getBigramProb(map_before[m1] , map_after[m2] , voc  , lm);
+                    if(Delta[t][m1] + transition > max_prob)
+                    {
+                        max_prob = Delta[t][m1] + transition;
+                        max_preword = map_before[m1];
+                        preword_index = m1;
+                    }
+                }
+                
+                /* store for back tracking */
+                Delta[t+1].push_back(max_prob);
+                track_index[t+1].push_back(preword_index);
+                /* use element of track_index[t+1] as index seqrch in q[t] */
+                q[t].push_back(max_preword);
+            }
             cout<<endl;
+            for(j = 0 ; j < q[0].size() ; j++)
+            {
+                cout<<"q[0].size() = "<<q[0].size()<<"  "<<j<<" = "<<q[0][j];
+            }
+            cout<<endl;
+            // map_before.clear();
+            // map_after.clear();
         }
-        
 
+        /* select Viterbi path */
+        int Viterbi_final_path_index = 0;
+        float Viterbi_prob = -10000;
+        for(i = 0 ; i < Delta[Time-1].size() ; i++)
+        {
+            if(Delta[Time-1][i] > Viterbi_prob)
+            {
+                Viterbi_final_path_index = i;
+                Viterbi_prob = Delta[Time-1][i];
+            }
+        }
+        cout<<"\nViterbi select = "<<Viterbi_final_path_index<<endl;
+        cout<<"\n\nend";
+        //////////////////////
+        // break;
+        ///////////////////////////
     }
     // for(i=0;i<text_set.size() - 1;i++)
     // {
