@@ -21,99 +21,52 @@ double getBigramProb(const char *w1, const char *w2 , Vocab voc , Ngram lm)
      VocabIndex context[] = { wid1, Vocab_None };
      return lm.wordProb( wid2, context);
 }
-char * Select_Big5(char* c1 , char* c2 , char* mapping , Vocab voc , Ngram lm)
+
+vector<char*> Get_map_set(char* ZhuYin , char* mapping)
 {
-    cout<<"PATH = "<<c1 <<c2<<endl;
-    char map_row[SIZE];
-
-    cout<<"enter1";
-    FILE *mapping_fp = fopen(mapping , "r");
-    cout<<"enter2";
-    static vector<char*> mapOne;
-    cout<<"enter3";
-    static vector<char*> mapTwo;
-    cout<<"enter4";
-    const char *d = " \t\n";
-    cout<<"enter5";
-    int q , f1 = 0 ,f2 = 0;
-    cout<<"enter";
-    while(fgets(map_row , SIZE , mapping_fp)!=NULL)
+    /* read ecah row */
+    ifstream map_file;
+    map_file.open(mapping);
+    string s;
+    vector<char *> map_set;
+    int i;
+    while(getline(map_file , s)) // not read to end
     {
-        // 字串切割
-        char* w;
-        cout<<map_row<<endl;
-        w = strtok(map_row , d);
-        // hit mapping row for c1
-        if(strcmp(w , c1) == 0)
+        
+        /* string change to *char */
+        char *row = strdup(s.c_str());
+        /* string partition */
+        const char *d = " \t\n";
+        char * p;
+        int hit = 0;
+
+        p = strtok(row , d);
+        while (p)
         {
-            cout<<"map row = "<<map_row<<endl;
-            f1 = 1;
-            cout<<"find "<<c1<<endl;
-            while(w)
+            if(strcmp(p , ZhuYin) == 0 || hit == 1 )
             {
-                mapOne.push_back(w);
-                w = strtok(NULL , d);
+                map_set.push_back(p);
+                hit = 1;
             }
-            mapOne.erase(mapOne.begin());
-
-            // print mapping row
-            cout<<"mapOne row = ";
-            for(q = 0 ; q < mapOne.size() ; q++)
-            {
-                cout<<mapOne.at(q);
-            }
-            cout<<endl<<endl;
-        }
-    }    
-    fclose(mapping_fp);
-    mapping_fp = fopen(mapping , "r");
-    while(fgets(map_row , SIZE , mapping_fp)!=NULL)
-    {
-        // 字串切割
-        char* w;
-        w = strtok(map_row , d);
-        // hit mapping row for c2
-        if(strcmp(w , c2) == 0)
-        {
-            
-            f2 = 1;
-            cout<<"find "<<c2<<endl;
-            while(w)
-            {
-                mapTwo.push_back(w);
-                w = strtok(NULL , d);
-            }
-            mapTwo.erase(mapTwo.begin());
-            // print mapping row inside
-            cout<<"mapTwo row = ";
-            for(q = 0 ; q < mapTwo.size() ; q++)
-            {
-                cout<<mapTwo[q];
-            }
-            cout<<endl;
-
-            cout<<"size = "<<mapTwo.size()<<"twice = ";
-            for(q = 0 ; q < mapTwo.size() ; q++)
-            {
-                cout<<mapTwo[q];
-            }
-            cout<<endl;
-        }
+            else if(hit == 0)
+                break;
+            p = strtok(NULL, d);
+        }   
+        if(hit == 1)   // have found mapping row
+            break;
+        int i = 0;
     }
-    // cout<<mapTwo.at(0);
-    cout<<"mapTwo size = "<<mapTwo.size()<<"  third = ";
-    for(q = 0 ; q < mapTwo.size() ; q++)
-    {
-        cout<<mapTwo[q];
-    }
-    cout<<"end";
-    cout<<endl;
+    // cout<<"size = "<<map_set.size()<<endl;
+    // for(i = 0 ; i < map_set.size();i++)
+    // {
+    //     cout<<map_set[i];
+    // }
 
-    cout<<"final"<<mapTwo.at(0);
-
-    fclose(mapping_fp);
-    return "";
+    map_file.close();
+    map_set.erase(map_set.begin());
+    return map_set;
 }
+
 
 int main(int argc, char *argv[])
 {
@@ -144,52 +97,98 @@ int main(int argc, char *argv[])
         lmFile.close();
     }
 
-    /* read text file. */
-    char text_line[SIZE];
-    FILE *text_fp = fopen(text_file , "r");
-    int i = 0;
-    vector<char*> path;
-    /* each round is 1 row in "text_file" */
-    while(fgets(text_line , SIZE , text_fp)!=NULL)
+    /* read text file */
+    ifstream text_fp;
+    text_fp.open(text_file);
+    string temp;
+    vector<char *> text_set;
+    int i;
+    while(getline(text_fp , temp)) // not read to end
     {
-        //////////// read text row ////////////////
-	    /* text partition */
-        char *p;    
-        // vector<char*> path;
+        text_set.clear();
+        /* string change to *char */
+        char *text_row = strdup(temp.c_str());
+        /* string partition */
         const char *d = " \t\n";
-        p = strtok(text_line , d);
-        while(p)
+        char * p;
+        p = strtok(text_row , d);
+        while (p)
         {
-    	    cout<<p;
-            path.push_back(p);
-	        p = strtok(NULL , d);
-        }
-        cout<<endl;
-        // path.pop_back();    // delete the last empty character
+            printf("%s",p);
+            text_set.push_back(p);
+            p = strtok(NULL, d);
+        }   
+        cout<<"\ntext size = "<<text_set.size()<<endl<<endl;
 
-        /* print text Vector */
-        cout<<endl<<"result:"<<path.size()<<endl;
-        for(i = 0;i<path.size();i++)
+
+
+        // 考慮做一個二維vector 放整行?
+        /* start Viterbi */
+        int Time = text_set.size();
+
+
+        /* create ZhuYin mapping set */
+        
+        //print corresponding big-5 mapping set 
+        vector<char*> map_test; 
+        for(i = 0; i <text_set.size() ; i++)
         {
-            cout<<path.at(i);
+            int j;
+            map_test = Get_map_set(text_set[i] , mapping);
+            cout<<"\nZhuYin = "<<text_set[i]<<"  size = "<<map_test.size()<<endl;
+            for(j=0 ; j < map_test.size() ; j++)
+            {
+                cout<<map_test[j];
+            }
+            
+            cout<<endl;
         }
-        cout<<endl;
-        /* bigram prob. */
-        // for(i = 0;i<path.size()-1;i++)
-        // {
-        //     cout<<i<<getBigramProb(path[i] , path[i+1] , voc , lm)<<endl;
-        // }
-        cout<<endl<<endl;
-        path.clear();
-     }
+        
 
+    }
+    // for(i=0;i<text_set.size() - 1;i++)
+    // {
+    //     vector<char*> m1,m2;
+    //     cout<<text_set[i]<<endl;
+    //     m1 = Get_map_set(text_set[i]);
+    //     m2 = Get_map_set(text_set[i+1]);
+    // }
+
+    // vector<char*> m1 , m2;
+    // m1 = Get_map_set(text_set[0]);
+    // m2 = Get_map_set(text_set[1]);
+    // cout<<"ZhuYin 1 = "<<text_set[0]<<"  size = "<<m1.size()<<endl;
+    // for(i=0;i<m1.size();i++)
+    // {
+    //     cout<<m1[i];
+    // }
+    // cout<<"\n\nZhuYin 2 = "<<text_set[1]<<"  size = "<<m2.size()<<endl;
+    // for(i=0;i<m2.size();i++)
+    // {
+    //     cout<<m2[i];
+    // }
+
+
+
+    cout<<"\n\nend"<<endl;
     cout<<endl;
-    Select_Big5("你", "ㄡ" , mapping , voc , lm);
-    fclose(text_fp);
-    cout<<endl<<endl;
-   
 
+    /* send ZhuYin to "Get_map_set" to get Big-5 mapping set */
 
+    /* assign ZhuYin method
+    string s= "ㄒ";
+    char *ZhuYin = strdup(s.c_str());
+    vector<char*> map_set = Get_map_set(ZhuYin);
+    vector<char*> map_set = Get_map_set(text_set[0]);
+    cout<<"\nreturn map size = "<<map_set.size()<<endl;
+    for(i=0;i<map_set.size();i++)
+    {
+        cout<<map_set[i];
+    }
+    */
+
+    text_fp.close();
+    return 0;
 
     return 0;
 }
