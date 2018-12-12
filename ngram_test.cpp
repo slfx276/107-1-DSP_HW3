@@ -56,11 +56,6 @@ vector<char*> Get_map_set(char* ZhuYin , char* mapping)
             break;
         int i = 0;
     }
-    // cout<<"size = "<<map_set.size()<<endl;
-    // for(i = 0 ; i < map_set.size();i++)
-    // {
-    //     cout<<map_set[i];
-    // }
 
     map_file.close();
     map_set.erase(map_set.begin());
@@ -99,6 +94,8 @@ int main(int argc, char *argv[])
 
     /* read text file */
     ifstream text_fp;
+    ofstream output_file;
+    output_file.open(output);
     text_fp.open(text_file);
     string temp;
     vector<char *> text_set;
@@ -115,48 +112,32 @@ int main(int argc, char *argv[])
         p = strtok(text_row , d);
         while (p)
         {
-            printf("%s",p);
+            // printf("%s",p);
             text_set.push_back(p);
             p = strtok(NULL, d);
         }   
-        cout<<"\ntext size = "<<text_set.size()<<endl<<endl;
+        // cout<<"\ntext size = "<<text_set.size()<<endl<<endl;
 
         /* create ZhuYin mapping set */
     
         int Time = text_set.size();
         int i , j , t;
-        vector<char*> q[Time];
-        vector<int> track_index[Time];
         vector<float> Delta[Time];
         vector<char*> map_before , map_after; 
-        vector<char*> map_test;
         string s1 = "<s>" , s2 = "</s>";
         char *start = strdup(s1.c_str()) , *end = strdup(s2.c_str());
         
-        /* Viterbi parameter from beginning to the end. */
-        for(t = 0 ; t < Time-1 ; t++)
+        /*  from beginning to the end. */
+        for(t = 1 ; t < Time ; t++)
         {
             map_before.clear();
             map_after.clear();
-            map_before = Get_map_set(text_set[t] , mapping);
-            map_after = Get_map_set(text_set[t+1] , mapping);
-            /* initialize Delta[0] */
-            // if(t==0)
-            // {
-            //     // Delta[0] have map_before.size() elements.
-            //     for(j = 0 ; j < map_before.size() ; j++)
-            //     {
-            //         Delta[0].push_back(getBigramProb( start , map_before[j] , voc , lm));
-            //     }
-            //     // for(j = 0 ; j < Delta[0].size() ; j++)
-            //     // {
-            //     //     cout<<"Dealta "<<map_before[j]<<" = "<<Delta[0][j]<<endl;
-            //     // }
-            // }
-            cout<<"finish Delta[0] initialization. time = 1/"<<t<<endl;
+            map_before = Get_map_set(text_set[t-1] , mapping);
+            map_after = Get_map_set(text_set[t] , mapping);
+
+            // cout<<"start find pair of time = "<<t<<endl;
+            // cout<<"map_after.size = "<<map_after.size()<<endl;
             int m1 , m2;
-            /* create other Time-1 Delta */
-            cout<<"map_after.size = "<<map_after.size()<<endl;
             char *pre , *pro;
             float max_prob = -10000;
             /* find pair of max prob. and then update directly. */
@@ -175,61 +156,24 @@ int main(int argc, char *argv[])
                     }
                 }
             }
-            cout<<max_prob<<" "<<pre<<" "<<pro<<endl;
-            text_set[t] = pre;
-            text_set[t+1] = pro;
+            /* update text[t-1] and text[t] directly */
+            // cout<<max_prob<<" "<<pre<<" "<<pro<<endl;
+            text_set[t-1] = pre;
+            text_set[t] = pro;
         }
-
+        /* show mapping result */
+        cout<<"<s> ";
+        output_file<<"<s> ";
         for(i = 0 ; i < text_set.size() ; i++)
         {
-            cout<<text_set[i];
+            cout<<" "<<text_set[i];
+            output_file<<" "<<text_set[i];
         }
-        cout<<endl<<endl<<"finish to break";
-
+        cout<<" </s>"<<endl;
+        output_file<<" </s>\n";
     }
-    // for(i=0;i<text_set.size() - 1;i++)
-    // {
-    //     vector<char*> m1,m2;
-    //     cout<<text_set[i]<<endl;
-    //     m1 = Get_map_set(text_set[i]);
-    //     m2 = Get_map_set(text_set[i+1]);
-    // }
-
-    // vector<char*> m1 , m2;
-    // m1 = Get_map_set(text_set[0]);
-    // m2 = Get_map_set(text_set[1]);
-    // cout<<"ZhuYin 1 = "<<text_set[0]<<"  size = "<<m1.size()<<endl;
-    // for(i=0;i<m1.size();i++)
-    // {
-    //     cout<<m1[i];
-    // }
-    // cout<<"\n\nZhuYin 2 = "<<text_set[1]<<"  size = "<<m2.size()<<endl;
-    // for(i=0;i<m2.size();i++)
-    // {
-    //     cout<<m2[i];
-    // }
-
-
-
-    cout<<"\n\nend"<<endl;
-    cout<<endl;
-
-    /* send ZhuYin to "Get_map_set" to get Big-5 mapping set */
-
-    /* assign ZhuYin method
-    string s= "££";
-    char *ZhuYin = strdup(s.c_str());
-    vector<char*> map_set = Get_map_set(ZhuYin);
-    vector<char*> map_set = Get_map_set(text_set[0]);
-    cout<<"\nreturn map size = "<<map_set.size()<<endl;
-    for(i=0;i<map_set.size();i++)
-    {
-        cout<<map_set[i];
-    }
-    */
-
+    output_file.close();
     text_fp.close();
-    return 0;
 
     return 0;
 }
