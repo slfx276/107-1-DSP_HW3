@@ -24,46 +24,6 @@ double getBigramProb(const char *w1, const char *w2 , Vocab voc , Ngram lm)
      return lm.wordProb( wid2, context);
 }
 
-vector<char*> Get_map_set(char* ZhuYin , char* mapping)
-{
-
-    /* read ecah row */
-    ifstream map_file;
-    map_file.open(mapping);
-    string s;
-    vector<char *> map_set;
-    int i;
-    while(getline(map_file , s)) // not read to end
-    {
-        
-        /* string change to *char */
-        char *row = strdup(s.c_str());
-        /* string partition */
-        const char *d = " \t\n";
-        char * p;
-        int hit = 0;
-
-        p = strtok(row , d);
-        while (p)
-        {
-            if(strcmp(p , ZhuYin) == 0 || hit == 1 )
-            {
-                map_set.push_back(p);
-                hit = 1;
-            }
-            else if(hit == 0)
-                break;
-            p = strtok(NULL, d);
-        }   
-        if(hit == 1)   // have found mapping row
-            break;
-        int i = 0;
-    }
-
-    map_file.close();
-    map_set.erase(map_set.begin());
-    return map_set;
-}
 struct cmp_str  
 {  
     bool operator()(char const *a, char const *b)  
@@ -168,30 +128,7 @@ int main(int argc, char *argv[])
     }
     // t2 = clock();
     // cout<<"\nCost Time = "<< double(t2 - t1) / CLOCKS_PER_SEC << endl;
-    ////////////////////////////////////////////////////////////////////////////////////////////
-   
-    // cout<<mapZhuYin.size();
-    // for(iter = mapZhuYin.begin() ; iter != mapZhuYin.end() ; iter++)
-    // {
-    //     cout<<iter->first;
-    //     for(j = 0 ; j < iter->second.size() ; j++)
-    //     {
-    //         cout<<iter->second[j];
-    //     }
-    //     cout<<endl;
-    // }
-
-    // string test = "ㄉ";
-    // char *k = strdup(test.c_str());
-    // cout<<"test = "<<k<<endl;
-    // iter = mapZhuYin.find(k);
-    // cout<<iter->first<<endl;
-    // for(i = 0 ; i < iter->second.size() ; i++)
-    // {
-    //     cout<<iter->second[i];
-    // }
-
-    // cout<<"endl"<<endl;
+    ////////////////////////////////////////////////////////////////////////////////////
 
     /* text_set[i] (vector<char*>) 裡面存了一行的tesxt 
     mapZhuYin[key] (vector<char*>) 裡面存了mapping 的 Big-5 */
@@ -218,6 +155,7 @@ int main(int argc, char *argv[])
         t2 = clock();
         cout<<"\nCost Time = "<< double(t2 - t1) / CLOCKS_PER_SEC << endl;
 
+        /* 每一 round 處理一個字 */
         for( wordTime = 1 ; wordTime < wordLength ; wordTime ++)
         {
             cout<<"wordTime = "<<wordTime<<" ";
@@ -225,16 +163,33 @@ int main(int argc, char *argv[])
             iter2 = mapZhuYin.find(text_set[rowNumber][wordTime]);
             char *temp;
             int preIndex , proIndex;
+            float maxProb = -10000 , prob;
+            char *maxPreword;
+            int maxPrewordIndex;
             /* search each word pair of neighbor words  */
             for(proIndex = 0 ; proIndex < iter2->second.size() ; proIndex++)
             {
-                float maxProb = -10000;
-                char *maxPreword;
-                int maxPrewordIndex;
+                maxProb = -10000;
                 /* which pre word can maximize Delta[t][q_proIndex] */
                 for(preIndex = 0 ; preIndex < iter1->second.size() ; preIndex++)
                 {
-                    float prob = getBigramProb(iter1->second[preIndex] , iter2->second[proIndex] , voc , lm);
+                    prob = 0;
+                    // prob = getBigramProb(iter1->second[preIndex] , iter2->second[proIndex] , voc , lm);
+                    //////////////////////////////////
+                    VocabIndex wid1 = voc.getIndex(iter1->second[preIndex]);
+                    VocabIndex wid2 = voc.getIndex(iter2->second[proIndex]);
+
+                    if(wid1 == Vocab_None)  //OOV
+                        wid1 = voc.getIndex(Vocab_Unknown);
+                    if(wid2 == Vocab_None)  //OOV
+                        wid2 = voc.getIndex(Vocab_Unknown);
+
+                    VocabIndex context[] = { wid1, Vocab_None };
+                    prob = lm.wordProb( wid2, context);
+
+                    //////////////////////////////////
+
+
                     if(prob + vectorDelta[wordTime-1][preIndex] > maxProb)
                     {
                         maxProb = prob + vectorDelta[wordTime-1][preIndex];
@@ -246,7 +201,7 @@ int main(int argc, char *argv[])
                 vectorPreword[wordTime].push_back(maxPrewordIndex);
                 i = maxPrewordIndex;
             }
-            cout<<proIndex<<" "<<iter1->second[i]<<" ";
+            // cout<<proIndex<<" "<<iter1->second[i]<<" ";
             t2 = clock();
             cout<<"=> wordCost Time = "<< double(t2 - t1) / CLOCKS_PER_SEC << endl;
         } // finish one row
