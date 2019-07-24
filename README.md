@@ -1,2 +1,3 @@
 # DSP_HW3
-Digital speech processing HW3 - completion version
+Digital Speech Processing HW3 of NTU CSIE - completion version
+
